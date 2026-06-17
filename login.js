@@ -22,20 +22,26 @@ function initAuth() {
 }
 
 async function handleCredentialResponse(response) {
+    console.log("Encoded JWT ID token: " + response.credential);
     const responsePayload = decodeJwtResponse(response.credential);
     const email = responsePayload.email;
+    console.log("User Email: " + email);
 
     showLoading(true);
     try {
+        console.log("Calling API Auth for: " + email);
         const result = await callAPI("auth", { email: email });
+        console.log("API Auth Result:", result);
         
         if (result.status === "success") {
             sessionStorage.setItem("ufix_user", JSON.stringify(result.user));
             showMainApp();
         } else {
+            console.warn("Auth Denied:", result.message);
             document.getElementById("login-error").innerText = result.message || "Access Denied";
         }
     } catch (err) {
+        console.error("Auth Exception:", err);
         document.getElementById("login-error").innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์";
     } finally {
         showLoading(false);

@@ -18,6 +18,6 @@ const CONFIG = {
         ADDRESS: "123/45 ถนนหลัก แขวง/ตำบล เขต/อำเภอ กรุงเทพฯ 10XXX",
         PHONE: "02-XXX-XXXX",
         EMAIL: "contact@ufix.co.th",
-        LOGO: "https://via.placeholder.com/150x50?text=UFIX+LOGO" // ใส่ URL โลโก้จริง
+        LOGO: "" // ใส่ URL โลโก้จริงที่นี่ในภายหลัง
     }
 };
