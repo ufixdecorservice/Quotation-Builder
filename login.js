@@ -1,8 +1,15 @@
 /**
- * Login & Auth Handler
+ * Login & Auth Handler (V2.2 - With Retry Logic)
  */
 
 function initAuth() {
+    // ตรวจสอบว่า Google Library โหลดเสร็จหรือยัง
+    if (typeof google === 'undefined' || !google.accounts) {
+        console.log("Waiting for Google Library...");
+        setTimeout(initAuth, 500); // รออีก 0.5 วินาทีแล้วลองใหม่
+        return;
+    }
+
     google.accounts.id.initialize({
         client_id: CONFIG.GOOGLE_CLIENT_ID,
         callback: handleCredentialResponse
