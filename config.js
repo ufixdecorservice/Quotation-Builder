@@ -3,7 +3,7 @@
  */
 const CONFIG = {
     // URL ของ Google Apps Script ที่ Deploy เป็น Web App แล้ว
-    API_URL: "https://script.google.com/macros/s/AKfycbxRXJe85oMAdK_dKgg8B2GjHv4B1QB4wXbxTgNqdR8Sra5zo2RsdS7HGjThE5YuBzg6/exec",
+    API_URL: "https://script.google.com/macros/s/AKfycbx-7gvMrS4ky-qD1FVRREsxf_m41gNc4p31p1NvBa4DVJUmCLHOle0GPMhQ7zkGTWyQ/exec",
     
     // Token ที่ต้องตรงกับใน Apps Script
     API_TOKEN: "UFIX_SECURE_TOKEN_2026",
