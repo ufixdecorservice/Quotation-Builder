@@ -3,13 +3,13 @@
  */
 const CONFIG = {
     // URL ของ Google Apps Script ที่ Deploy เป็น Web App แล้ว
-    API_URL: "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec",
+    API_URL: "https://script.google.com/macros/s/AKfycbxRXJe85oMAdK_dKgg8B2GjHv4B1QB4wXbxTgNqdR8Sra5zo2RsdS7HGjThE5YuBzg6/exec",
     
     // Token ที่ต้องตรงกับใน Apps Script
     API_TOKEN: "UFIX_SECURE_TOKEN_2026",
     
     // Google Client ID สำหรับ Login (ต้องไปสร้างใน Google Cloud Console)
-    GOOGLE_CLIENT_ID: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
+    GOOGLE_CLIENT_ID: "37129815742-5sbk62prbq4h2bptg0gaumtam7rlos7v.apps.googleusercontent.com",
     
     // ข้อมูลบริษัทสำหรับใบเสนอราคา
     COMPANY: {
