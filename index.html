@@ -215,11 +215,14 @@
     <!-- Hidden Export Area (For PDF Generation) -->
     <div id="pdf-template" style="display: none;"></div>
 
+    <!-- โหลดสคริปต์ที่นี่เพื่อให้แน่ใจว่า DOM และ Google Library พร้อม -->
     <script src="config.js"></script>
     <script src="login.js"></script>
     <script src="dashboard.js"></script>
     <script src="quotation.js"></script>
     <script src="pdf.js"></script>
     <script src="script.js"></script>
+    <!-- Google Identity Services (ย้ายมาไว้ข้างล่างและเอา async/defer ออกชั่วคราวเพื่อเทส) -->
+    <script src="https://accounts.google.com/gsi/client"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 /**
- * Main Application Logic & Utils
+ * Main Application Logic & Utils (Optimized V2.1)
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -32,7 +32,7 @@ function switchSection(sectionId) {
 }
 
 /**
- * Common API Caller
+ * Common API Caller (Unified & Secure)
  */
 async function callAPI(action, payload) {
     const body = {
@@ -41,20 +41,24 @@ async function callAPI(action, payload) {
         payload: payload
     };
 
-    const response = await fetch(CONFIG.API_URL, {
-        method: "POST",
-        mode: "no-cors", // Note: Apps Script might need 'no-cors' but results won't be readable, 
-                         // Recommended: Deploy GAS with "Anyone" access and use regular fetch
-        body: JSON.stringify(body)
-    });
-
-    // เนื่องจาก Google Apps Script Redirect บ่อย แนะนำให้ใช้ fetch แบบปกติ
-    // หากติด CORS ให้ตรวจสอบการตั้งค่า Deploy ใน Apps Script
-    const res = await fetch(CONFIG.API_URL, {
-        method: "POST",
-        body: JSON.stringify(body)
-    });
-    return await res.json();
+    try {
+        // ใช้ fetch แบบมาตรฐาน (Google Apps Script รองรับ CORS เมื่อ Deploy แบบ Anyone)
+        const response = await fetch(CONFIG.API_URL, {
+            method: "POST",
+            mode: "cors", 
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8",
+            },
+            body: JSON.stringify(body)
+        });
+        
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        return await response.json();
+    } catch (error) {
+        console.error("API Call Error:", error);
+        throw error;
+    }
 }
 
 /**
@@ -64,11 +68,19 @@ function showToast(msg) {
     const toast = document.getElementById("toast");
     toast.innerText = msg;
     toast.style.display = "block";
+    toast.style.backgroundColor = msg.includes("ผิดพลาด") ? "#D50000" : "#333";
     setTimeout(() => { toast.style.display = "none"; }, 3000);
 }
 
 function showLoading(show) {
-    // Implement loading overlay if needed
+    const btn = document.querySelector(".btn-primary");
+    if (show) {
+        if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังดำเนินการ...';
+        document.body.style.cursor = "wait";
+    } else {
+        if (btn) btn.innerHTML = btn.id === "save-btn" ? '<i class="fas fa-save"></i> บันทึกข้อมูล' : btn.innerHTML;
+        document.body.style.cursor = "default";
+    }
 }
 
 function filterQuotations() {
