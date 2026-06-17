@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UFIX Quotation System</title>
+    <!-- ป้องกันปัญหา Cross-Origin สำหรับ Google Login -->
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
+    <title>UFIX - Quotation System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -17,7 +19,7 @@
     <!-- Login Screen -->
     <div id="login-screen" class="screen active">
         <div class="login-card">
-            <img src="https://via.placeholder.com/150x50?text=UFIX+LOGO" alt="UFIX Logo" class="login-logo">
+            <h1 style="color: var(--primary); margin-bottom: 20px;">UFIX</h1>
             <h2>ยินดีต้อนรับ</h2>
             <p>กรุณาลงชื่อเข้าใช้ด้วยบัญชี Google ของบริษัท</p>
             <div id="google-login-btn"></div>
