@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFIX Quotation System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- PDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen active">
+        <div class="login-card">
+            <img src="https://via.placeholder.com/150x50?text=UFIX+LOGO" alt="UFIX Logo" class="login-logo">
+            <h2>ยินดีต้อนรับ</h2>
+            <p>กรุณาลงชื่อเข้าใช้ด้วยบัญชี Google ของบริษัท</p>
+            <div id="google-login-btn"></div>
+            <div id="login-error" class="error-msg"></div>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div id="main-layout" class="screen">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fas fa-file-invoice-dollar"></i> UFIX QT
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-target="dashboard-section"><i class="fas fa-chart-line"></i> แดชบอร์ด</a>
+                <a href="#" class="nav-item" data-target="create-section"><i class="fas fa-plus-circle"></i> สร้างใบเสนอราคา</a>
+                <a href="#" class="nav-item" data-target="list-section"><i class="fas fa-list"></i> รายการทั้งหมด</a>
+            </nav>
+            <div class="sidebar-footer">
+                <span id="user-email"></span>
+                <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</button>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="content-section active">
+                <div class="section-header">
+                    <h1>แดชบอร์ด</h1>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon purple"><i class="fas fa-file-alt"></i></div>
+                        <div class="stat-info">
+                            <span class="label">ใบเสนอราคาทั้งหมด</span>
+                            <span class="value" id="stat-total-count">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange"><i class="fas fa-money-bill-wave"></i></div>
+                        <div class="stat-info">
+                            <span class="label">มูลค่ารวม (บาท)</span>
+                            <span class="value" id="stat-total-value">0.00</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                        <div class="stat-info">
+                            <span class="label">ลูกค้าทั้งหมด</span>
+                            <span class="value" id="stat-total-customers">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-list-card">
+                    <h3>รายการล่าสุด</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>เลขที่</th>
+                                <th>วันที่</th>
+                                <th>ชื่อลูกค้า</th>
+                                <th>ยอดรวม</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-table-body">
+                            <!-- Data injection -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Create/Edit Section -->
+            <section id="create-section" class="content-section">
+                <div class="section-header">
+                    <h1 id="form-title">สร้างใบเสนอราคาใหม่</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="resetForm()"><i class="fas fa-redo"></i> ล้างฟอร์ม</button>
+                        <button class="btn btn-primary" onclick="saveQuotation()"><i class="fas fa-save"></i> บันทึกข้อมูล</button>
+                    </div>
+                </div>
+
+                <div class="form-container">
+                    <div class="form-row">
+                        <div class="form-group col-4">
+                            <label>เลขที่ใบเสนอราคา</label>
+                            <input type="text" id="qt-no" readonly placeholder="Auto-running">
+                        </div>
+                        <div class="form-group col-4">
+                            <label>วันที่</label>
+                            <input type="date" id="qt-date">
+                        </div>
+                    </div>
+
+                    <div class="form-card">
+                        <h3>ข้อมูลลูกค้า</h3>
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label>ชื่อลูกค้า / บริษัท</label>
+                                <input type="text" id="cust-name" required>
+                            </div>
+                            <div class="form-group col-6">
+                                <label>เบอร์โทรศัพท์</label>
+                                <input type="text" id="cust-phone">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label>อีเมล</label>
+                                <input type="email" id="cust-email">
+                            </div>
+                            <div class="form-group col-12">
+                                <label>ที่อยู่</label>
+                                <textarea id="cust-address" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-card">
+                        <div class="card-header">
+                            <h3>รายการสินค้า/บริการ</h3>
+                            <button class="btn btn-sm btn-success" onclick="addItemRow()"><i class="fas fa-plus"></i> เพิ่มรายการ</button>
+                        </div>
+                        <table class="item-table">
+                            <thead>
+                                <tr>
+                                    <th width="5%">#</th>
+                                    <th width="45%">รายละเอียด</th>
+                                    <th width="10%">จำนวน</th>
+                                    <th width="10%">หน่วย</th>
+                                    <th width="15%">ราคา/หน่วย</th>
+                                    <th width="15%">รวม</th>
+                                    <th width="5%"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="item-list-body">
+                                <!-- Item rows -->
+                            </tbody>
+                        </table>
+
+                        <div class="summary-area">
+                            <div class="summary-row">
+                                <span>รวมเงิน (Subtotal)</span>
+                                <span id="sum-subtotal">0.00</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>ภาษีมูลค่าเพิ่ม 7% (VAT)</span>
+                                <span id="sum-vat">0.00</span>
+                            </div>
+                            <div class="summary-row grand-total">
+                                <span>ยอดรวมสุทธิ (Grand Total)</span>
+                                <span id="sum-grandtotal">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- List Section -->
+            <section id="list-section" class="content-section">
+                <div class="section-header">
+                    <h1>รายการใบเสนอราคาทั้งหมด</h1>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="ค้นหาเลขที่ หรือ ชื่อลูกค้า..." onkeyup="filterQuotations()">
+                    </div>
+                </div>
+                <div class="recent-list-card">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>เลขที่</th>
+                                <th>วันที่</th>
+                                <th>ชื่อลูกค้า</th>
+                                <th>ยอดรวม</th>
+                                <th>วันที่บันทึก</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="full-table-body">
+                            <!-- Data injection -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Hidden Export Area (For PDF Generation) -->
+    <div id="pdf-template" style="display: none;"></div>
+
+    <script src="config.js"></script>
+    <script src="login.js"></script>
+    <script src="dashboard.js"></script>
+    <script src="quotation.js"></script>
+    <script src="pdf.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
