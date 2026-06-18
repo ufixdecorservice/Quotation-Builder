@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>UFIX - Quotation Builder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Fonts & Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom Style -->
@@ -264,6 +267,60 @@
     </main>
 
 </div>
+
+<!-- Mobile Bottom Navigation Bar -->
+<div class="mobile-bottom-nav">
+    <button id="btn-mobile-edit" class="mobile-nav-btn active" onclick="switchMobileTab('edit')">
+        <i class="fas fa-edit"></i>
+        <span>กรอกข้อมูล</span>
+    </button>
+    <button id="btn-mobile-preview" class="mobile-nav-btn" onclick="switchMobileTab('preview')">
+        <i class="fas fa-file-invoice-dollar"></i>
+        <span>ดูใบเสนอราคา</span>
+    </button>
+</div>
+
+<script>
+    // Inline script to handle mobile tab switching
+    function switchMobileTab(mode) {
+        const body = document.body;
+        const btnEdit = document.getElementById('btn-mobile-edit');
+        const btnPreview = document.getElementById('btn-mobile-preview');
+        
+        if (mode === 'edit') {
+            body.classList.remove('mobile-preview-active');
+            body.classList.add('mobile-edit-active');
+            if (btnEdit) btnEdit.classList.add('active');
+            if (btnPreview) btnPreview.classList.remove('active');
+        } else {
+            body.classList.remove('mobile-edit-active');
+            body.classList.add('mobile-preview-active');
+            if (btnEdit) btnEdit.classList.remove('active');
+            if (btnPreview) btnPreview.classList.add('active');
+            
+            // Re-calculate scale when switching to preview tab
+            adjustMobileScale();
+        }
+    }
+
+    // Function to calculate exact scaling for mobile screen dynamically
+    function adjustMobileScale() {
+        if (window.innerWidth <= 768) {
+            const targetWidth = window.innerWidth - 20; // 10px padding on each side
+            const scale = targetWidth / 794; // 794px = 210mm (A4 width)
+            document.documentElement.style.setProperty('--preview-scale', scale);
+        } else {
+            document.documentElement.style.setProperty('--preview-scale', '1');
+        }
+    }
+
+    // Adjust scale on load and resize
+    window.addEventListener('resize', adjustMobileScale);
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.add('mobile-edit-active');
+        adjustMobileScale();
+    });
+</script>
 
 <!-- Persistence Layer Scripts (Google Sheets) -->
 <script src="./auth.js"></script>

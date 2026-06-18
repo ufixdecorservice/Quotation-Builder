@@ -69,12 +69,19 @@ const defaultData = {
 // Sidebar Toggle Logic
 function toggleSidebar() {
     const sidebar = document.getElementById('control-sidebar');
+    const workspace = document.querySelector('.preview-workspace');
+    
     if (sidebar) {
+        // Toggle active class to track state
         sidebar.classList.toggle('active');
-        // Toggle workspace margin to account for sidebar
-        const workspace = document.querySelector('.preview-workspace');
-        if (workspace) {
-            workspace.style.marginLeft = sidebar.classList.contains('active') ? 'var(--sidebar-width)' : '0';
+        
+        // Directly manipulate left position for visibility
+        if (sidebar.classList.contains('active')) {
+            sidebar.style.left = '-420px'; // Hide
+            if (workspace) workspace.style.marginLeft = '0';
+        } else {
+            sidebar.style.left = '0'; // Show
+            if (workspace) workspace.style.marginLeft = 'var(--sidebar-width)';
         }
     }
 }
@@ -738,17 +745,19 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
 
     return `
         <div id="${pageId}" class="a4-page">
-            <div class="page-content-wrapper">
-                ${headerHtml}
-                ${partiesHtml}
-                <div class="items-table-container">
-                    <table class="items-table">
-                        <thead>
-                            <tr><th>ลำดับ</th><th>รายละเอียดรายการงาน</th><th style="text-align: right;">จำนวน</th><th style="text-align: center;">หน่วย</th><th style="text-align: right;">ราคาต่อหน่วย</th><th style="text-align: right;">จำนวนเงิน (บาท)</th></tr>
-                        </thead>
-                        <tbody>${rowsHtml}</tbody>
-                    </table>
-                    ${isLastPage ? `<div class="add-row-container"><button class="btn-add-item-preview" onclick="addItem()"><i class="fas fa-plus-circle"></i> เพิ่มแถวรายการใหม่</button></div>` : continuedHtml}
+            <div class="page-content-wrapper" style="padding: 10mm; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    ${headerHtml}
+                    ${partiesHtml}
+                    <div class="items-table-container">
+                        <table class="items-table">
+                            <thead>
+                                <tr><th>ลำดับ</th><th>รายละเอียดรายการงาน</th><th style="text-align: right;">จำนวน</th><th style="text-align: center;">หน่วย</th><th style="text-align: right;">ราคาต่อหน่วย</th><th style="text-align: right;">จำนวนเงิน (บาท)</th></tr>
+                            </thead>
+                            <tbody>${rowsHtml}</tbody>
+                        </table>
+                        ${isLastPage ? `<div class="add-row-container"><button class="btn-add-item-preview" onclick="addItem()"><i class="fas fa-plus-circle"></i> เพิ่มแถวรายการใหม่</button></div>` : continuedHtml}
+                    </div>
                 </div>
                 ${footerHtml}
             </div>
@@ -909,61 +918,26 @@ function convertSection(numberStr) {
     return text;
 }
 
-// PDF Generation using html2pdf.js
+// PDF Generation using Native Browser Print (100% Correct Thai Shaping)
 function downloadPDF() {
-    // Check if html2pdf library is loaded
-    if (typeof html2pdf === 'undefined') {
-        alert('ไม่พบบริบทของระบบสร้าง PDF (html2pdf library missing)\nกรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตเพื่อให้เบราว์เซอร์โหลดตัวช่วยสร้าง PDF ได้ครับ');
-        return;
-    }
-
-    // Save current active element state to avoid focus loss bugs during render
+    // Save current active element state to avoid focus loss bugs
     if (document.activeElement) document.activeElement.blur();
     
-    const element = document.getElementById('print-area');
-    if (!element) return;
-    
-    // Show download indicator
-    const btn = document.getElementById('btn-download-pdf');
-    const originalText = btn ? btn.innerHTML : '';
-    if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังเตรียมไฟล์ PDF...';
-        btn.disabled = true;
-    }
-    
-    // Configure html2pdf options
-    const opt = {
-        margin:       [0, 0],
-        filename:     `${currentData.documentNo || 'Quotation'}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { 
-            scale: 2, 
-            useCORS: true, 
-            allowTaint: true,
-            logging: true,
-            letterRendering: false // Disable for better Thai font support
-        },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    
-    // Run html2pdf with a small delay to ensure rendering is complete
-    setTimeout(async () => {
-        // Backup to Cloud (Enterprise v2.0)
-        await saveToCloud(currentData);
+    // Save to Cloud before printing (Enterprise v2.0)
+    saveToCloud(currentData);
 
-        html2pdf().set(opt).from(element).save().then(() => {
-            // Restore button state
-            if (btn) {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }).catch(err => {
-            console.error('PDF Generation Error Detail:', err);
-            alert('เกิดข้อผิดพลาดในการดาวน์โหลด PDF: ' + (err.message || 'ไม่ทราบสาเหตุ') + '\n\nคำแนะนำ: หากใช้งานบนเครื่องส่วนตัว (Local) อาจเกิดจากข้อจำกัดด้านความปลอดภัยของเบราว์เซอร์ กรุณาใช้งานผ่านเว็บเซอร์เวอร์ หรือใช้ปุ่ม "พิมพ์เอกสาร" แล้วเลือก "Save as PDF" แทนครับ');
-            if (btn) {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        });
-    }, 500);
+    // Alert instructions for saving as PDF with perfect Thai fonts and correct size
+    alert(
+        "💡 คำแนะนำสำหรับการบันทึกเอกสาร A4 เต็มแผ่น (ไม่ให้ย่อยอดตัวเล็ก):\n\n" +
+        "1. เลือกเครื่องพิมพ์ (Printer) -> 'บันทึกเป็น PDF' (Save as PDF)\n" +
+        "2. กดที่ปุ่ม 'ตั้งค่าเพิ่มเติม' (More settings) แล้วตั้งค่าดังนี้:\n" +
+        "   - ขนาดกระดาษ (Paper size): เลือกเป็น 'A4'\n" +
+        "   - ระยะขอบ (Margins): เลือกเป็น 'ไม่มี' (None)   <-- ⚠️ สำคัญมากเพื่อป้องกันรูปเล่มหดตัว\n" +
+        "   - สเกล (Scale): เลือกเป็น 'ค่าเริ่มต้น' (Default) หรือ 100%\n" +
+        "   - กราฟิกพื้นหลัง (Background graphics): ติ๊กเครื่องหมายถูก  เพื่อให้สีและรูปโลโก้แสดงผล\n" +
+        "3. กดปุ่ม 'บันทึก' (Save) ได้เลยครับ"
+    );
+
+    // Trigger standard system print
+    window.print();
 }
