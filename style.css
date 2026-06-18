@@ -7,6 +7,7 @@
 
 /* CSS Variables for Dynamic Themes */
 :root {
+    color-scheme: light !important;
     --primary-color: #6c6df2; /* Default PEAK Purple */
     --primary-color-light: rgba(108, 109, 242, 0.08);
     --primary-color-hover: #5859d6;
@@ -943,6 +944,7 @@ body {
     }
 
     html, body {
+        color-scheme: light !important;
         width: 100% !important;
         height: auto !important;
         min-height: auto !important;
@@ -962,9 +964,17 @@ body {
         overflow: visible !important;
     }
 
-    .control-sidebar, .sidebar-toggle, .sidebar-footer {
+    .control-sidebar, .sidebar-toggle, .sidebar-footer, .mobile-bottom-nav, .add-row-container, .btn-add-item-preview {
         display: none !important;
     }
+
+    [contenteditable="true"] {
+        outline: none !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
 
     .preview-workspace {
         margin: 0 !important;
@@ -1012,3 +1022,37 @@ body {
 }
 
 /* Removed mobile responsive overrides for desktop-like view on all devices */
+
+/* Force light mode styles even if system is in dark mode to prevent automatic color inversion */
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: light !important;
+    }
+    body, .app-container {
+        background-color: #f0f2f5 !important;
+        color: #2d3748 !important;
+    }
+    .control-sidebar, .sidebar-section, .sidebar-footer {
+        background-color: #ffffff !important;
+        color: #2d3748 !important;
+        border-color: #e2e8f0 !important;
+    }
+    .form-control, select, textarea {
+        background-color: #ffffff !important;
+        color: #2d3748 !important;
+        border-color: #cbd5e0 !important;
+    }
+    .a4-page {
+        background-color: #ffffff !important;
+        color: #2d3748 !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+    }
+    .a4-page * {
+        color: inherit;
+    }
+    /* Exceptions for custom-colored components */
+    .doc-title-badge {
+        color: #fff !important;
+    }
+}
+

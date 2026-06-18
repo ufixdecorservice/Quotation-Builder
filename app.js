@@ -148,7 +148,14 @@ function initApp() {
     bindBtn('btn-add-item-sidebar', () => addItem());
     // btn-add-item-preview is dynamic, binding is handled in generatePageHtml via onclick
     bindBtn('btn-download-pdf', downloadPDF);
-    bindBtn('btn-print', () => window.print());
+    bindBtn('btn-print', async () => {
+        const btn = document.getElementById('btn-print');
+        const originalText = btn ? btn.innerHTML : '';
+        if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึกข้อมูล...';
+        await saveToCloud(currentData);
+        if (btn) btn.innerHTML = originalText;
+        window.print();
+    });
     bindBtn('btn-save-draft', saveDraft);
     bindBtn('btn-load-sample', loadSampleData);
     bindBtn('btn-reset', resetForm);
@@ -493,6 +500,25 @@ function syncDataToForm() {
     checkEl('inp-include-vat', currentData.includeVat);
     setValEl('inp-wht-rate', currentData.whtRate);
     setValEl('inp-doc-copy-mode', currentData.docCopyMode);
+
+    // Update QR Codes dynamically
+    const prevQrImgs = document.querySelectorAll('.prev-qr-code');
+    const qrContainers = document.querySelectorAll('.qr-code-box');
+    
+    if (currentData.documentNo && currentData.documentNo.trim() !== '') {
+        const viewUrl = GSheetAPI.URL + '?action=view&id=' + encodeURIComponent(currentData.documentNo);
+        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(viewUrl);
+        prevQrImgs.forEach(img => {
+            img.src = qrUrl;
+        });
+        qrContainers.forEach(container => {
+            container.style.display = 'flex';
+        });
+    } else {
+        qrContainers.forEach(container => {
+            container.style.display = 'none';
+        });
+    }
 }
 
 // Control Pages Display & Page Numbers dynamically
@@ -682,16 +708,22 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
                             <i class="fas fa-comment-dollar"></i>
                             <span class="grand-total-thai-text prev-grand-total-thai"></span>
                         </div>
-                        <div class="payment-box">
-                            <img src="./assets/kbank.png" alt="Bank Logo" class="bank-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <div class="bank-logo-placeholder" style="display:none; width:40px; height:40px; background:#f0f2f5; align-items:center; justify-content:center; border-radius:4px; margin-right:10px;">
-                                <i class="fas fa-university" style="color:#cbd5e0;"></i>
+                        <div class="payment-box" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                            <div style="display: flex; align-items: center;">
+                                <img src="./assets/kbank.png" alt="Bank Logo" class="bank-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div class="bank-logo-placeholder" style="display:none; width:40px; height:40px; background:#f0f2f5; align-items:center; justify-content:center; border-radius:4px; margin-right:10px;">
+                                    <i class="fas fa-university" style="color:#cbd5e0;"></i>
+                                </div>
+                                <div class="bank-details">
+                                    <span class="bank-name prev-bank-name" contenteditable="true"></span>
+                                    <span class="acc-no prev-bank-acc-no" contenteditable="true"></span>
+                                    <div class="acc-name prev-bank-acc-name" contenteditable="true"></div>
+                                    <div style="font-size: 8px;" class="prev-bank-branch" contenteditable="true"></div>
+                                </div>
                             </div>
-                            <div class="bank-details">
-                                <span class="bank-name prev-bank-name" contenteditable="true"></span>
-                                <span class="acc-no prev-bank-acc-no" contenteditable="true"></span>
-                                <div class="acc-name prev-bank-acc-name" contenteditable="true"></div>
-                                <div style="font-size: 8px;" class="prev-bank-branch" contenteditable="true"></div>
+                            <div class="qr-code-box" style="display: none; flex-direction: column; align-items: center; gap: 2px; border-left: 1px dashed var(--border-color); padding-left: 10px; margin-left: auto;">
+                                <img class="prev-qr-code" style="width: 52px; height: 52px;" src="" alt="QR Code">
+                                <span style="font-size: 6.5px; color: var(--text-muted); font-weight: bold; text-align: center; white-space: nowrap;">สแกนตรวจสอบเอกสาร</span>
                             </div>
                         </div>
                     </div>
@@ -827,6 +859,14 @@ function calculateTotals() {
     const paymentAmount = grandTotal - whtAmount;
     const bahtThaiString = bahtText(grandTotal);
     
+    // Store calculated totals in currentData for cloud persistence
+    currentData.subtotal = subtotal;
+    currentData.vat = vat;
+    currentData.grandTotal = grandTotal;
+    currentData.whtAmount = whtAmount;
+    currentData.paymentAmount = paymentAmount;
+    currentData.grandTotalThai = bahtThaiString;
+    
     // Update all occurrences in preview
     const updateAll = (cls, val) => {
         document.querySelectorAll('.' + cls).forEach(el => { el.innerText = val; });
@@ -919,12 +959,18 @@ function convertSection(numberStr) {
 }
 
 // PDF Generation using Native Browser Print (100% Correct Thai Shaping)
-function downloadPDF() {
+async function downloadPDF() {
     // Save current active element state to avoid focus loss bugs
     if (document.activeElement) document.activeElement.blur();
     
     // Save to Cloud before printing (Enterprise v2.0)
-    saveToCloud(currentData);
+    const btn = document.getElementById('btn-download-pdf');
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึกข้อมูล...';
+    
+    await saveToCloud(currentData);
+    
+    if (btn) btn.innerHTML = originalText;
 
     // Alert instructions for saving as PDF with perfect Thai fonts and correct size
     alert(
