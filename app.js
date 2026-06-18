@@ -6,7 +6,7 @@
 const defaultData = {
     theme: 'purple',
     docCopyMode: 'both', // both = Set of 2, original = Original Only, copy = Copy Only
-    documentNo: 'QO-20260300003',
+    documentNo: 'UF-00000000001',
     dateCreated: '2026-03-05',
     dateExpired: '2026-03-12',
     dateAccepted: '-',
@@ -19,16 +19,16 @@ const defaultData = {
     sellerEmail: 'ufixdecor.service21@gmail.com',
     
     // Customer Info
-    customerName: 'C00047 คอนโดคิวชิดลม ห้อง 1088/46',
+    customerName: '-',
     customerTaxId: '-',
-    customerAddress: 'เลขที่ 1088 คิวชิดลม-เพชรบุรี ถนนเพชรบุรีตัดใหม่ แขวงมักกะสัน เขตราชเทวี กรุงเทพมหานคร 10400',
-    customerPhone: '0958091406',
+    customerAddress: '-',
+    customerPhone: '-',
     customerEmail: '-',
     
     // Contact Person (For seller response)
-    contactPerson: 'Pornpailin Jitnukroh',
-    contactPhone: '093-982-2684',
-    contactEmail: 'watch.2018@dlwconsultants.co.th',
+    contactPerson: '-',
+    contactPhone: '-',
+    contactEmail: '-',
     
     // Bank Payment Info
     bankName: 'ธ.กสิกรไทย',
@@ -42,28 +42,19 @@ const defaultData = {
     
     // Document Items List
     items: [
-        { desc: 'งานเตรียมระบบ ปรับพื้นที่ ทุบรื้อ ย้าย', qty: 1, unit: 'งาน', price: 60000 },
-        { desc: 'งานฉาบปูนรอยแตกขนาดใหญ่', qty: 1, unit: 'งาน', price: 6500 },
-        { desc: 'งานแก้ไขสกัดกระเบื้องเดิมและติดตั้งใหม่', qty: 1, unit: 'งาน', price: 16500 },
-        { desc: 'งานลอกวอลเปเปอร์ทั้งห้อง', qty: 1, unit: 'งาน', price: 6250 },
-        { desc: 'งานติดตั้งวอลเปเปอร์ทั้งห้อง', qty: 1, unit: 'งาน', price: 32660 },
-        { desc: 'งานยิงแด๊ปเก็บงานเก็บขอบระหว่างฝ้าและผนัง ทั่วทั้งห้องและขอบบิ้วอินที่แตกร้าว', qty: 1, unit: 'งาน', price: 2800 },
-        { desc: 'งานซ่อมฝ้าเพดานราว', qty: 1, unit: 'งาน', price: 13200 },
-        { desc: 'งานทาสีระเบียง', qty: 1, unit: 'งาน', price: 3500 },
-        { desc: 'งานทาสีฝ้าเพดาน', qty: 1, unit: 'งาน', price: 7000 },
-        { desc: 'งานเตรียมพื้น แร๊พเฟอร์นิเจอร์', qty: 1, unit: 'งาน', price: 5000 },
-        { desc: 'งาน protection big cleaning', qty: 1, unit: 'งาน', price: 5000 }
+        { desc: 'ใส่งานที่นี่', qty: 1, unit: 'งาน', price: 60000 },
+        { desc: 'ใส่งานที่นี์', qty: 1, unit: 'งาน', price: 5000 },
     ],
     
     remark: 'เงื่อนไขการรับประกันงาน: รับประกันความพึงพอใจและโครงสร้างการแก้ไข 1 ปีเต็ม',
     
     // Names for signatures
-    sigCreatorName: 'Pornpailin Jitnukroh',
+    sigCreatorName: 'มุรณี อูมา',
     sigCreatorDate: '15/06/2026',
-    sigApproverName: 'Pornpailin Jitnukroh',
+    sigApproverName: 'มุรณี อูมา',
     sigApproverDate: '15/06/2026',
-    sigCustomerName: 'คอนโดคิวชิดลม ห้อง 1088/46',
-    sigCustomerDate: ''
+    sigCustomerName: 'นรินทร์ น้ำดอกไม้',
+    sigCustomerDate: '15/06/2026'
 };
 
 // Sidebar Toggle Logic
@@ -720,10 +711,6 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
                                     <div class="acc-name prev-bank-acc-name" contenteditable="true"></div>
                                     <div style="font-size: 8px;" class="prev-bank-branch" contenteditable="true"></div>
                                 </div>
-                            </div>
-                            <div class="qr-code-box" style="display: none; flex-direction: column; align-items: center; gap: 2px; border-left: 1px dashed var(--border-color); padding-left: 10px; margin-left: auto;">
-                                <img class="prev-qr-code" style="width: 52px; height: 52px;" src="" alt="QR Code">
-                                <span style="font-size: 6.5px; color: var(--text-muted); font-weight: bold; text-align: center; white-space: nowrap;">สแกนตรวจสอบเอกสาร</span>
                             </div>
                         </div>
                     </div>

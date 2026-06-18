@@ -3,8 +3,8 @@
  */
 
 const GSheetAPI = {
-    // SINGLE GATEWAY URL (Requirement)
-    URL: 'https://script.google.com/macros/s/AKfycbyNWV1OIHIgyRvzXPJUfPXq-Fgu1UWeEvvReoFb2fEKnzcZ4j-Zhz48MNg_8mVuqoL9ew/exec',
+    // SINGLE GATEWAY URL (Requirement) - Updated 18/06/2569
+    URL: 'https://script.google.com/macros/s/AKfycbx8V2T8bIQOCv1WTXWkQK3IaJIFZpjL6jpBTCX-rgmtmOx8UoOwQuxpmggZlVr1mofgCg/exec',
 
     async call(action, data = {}) {
         const payload = {
