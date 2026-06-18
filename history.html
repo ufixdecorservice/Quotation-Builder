@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ประวัติใบเสนอราคา - UFIX</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./style.css">
+    <style>
+        .history-container { padding: 30px; max-width: 1200px; margin: 0 auto; }
+        .history-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .history-table th { background: var(--primary-color); color: white; padding: 15px; text-align: left; }
+        .history-table td { padding: 15px; border-bottom: 1px solid #edf2f7; }
+        .history-table tr:hover { background: #f7fafc; cursor: pointer; }
+        .search-box { margin-bottom: 20px; display: flex; gap: 10px; }
+        .search-box input { flex-grow: 1; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .status-active { background: #c6f6d5; color: #22543d; }
+    </style>
+</head>
+<body style="background: #f8fafc;">
+
+    <div class="history-container">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+            <h2><i class="fas fa-history" style="color:var(--primary-color);"></i> ประวัติใบเสนอราคา</h2>
+            <div>
+                <button onclick="window.location.href='index.html'" class="btn btn-primary"><i class="fas fa-plus"></i> สร้างใบเสนอราคา</button>
+                <button onclick="AuthSystem.logout()" class="btn btn-danger" style="padding:10px;"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="history-search" placeholder="ค้นหาด้วยเลขที่เอกสาร หรือ ชื่อลูกค้า...">
+            <button onclick="loadHistory()" class="btn btn-primary"><i class="fas fa-search"></i> ค้นหา</button>
+        </div>
+
+        <div id="history-content">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>เลขที่เอกสาร</th>
+                        <th>วันที่</th>
+                        <th>ชื่อลูกค้า</th>
+                        <th>ยอดรวมเงิน</th>
+                        <th style="text-align:center;">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="history-body">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="./auth.js"></script>
+    <script src="./gsheet.js"></script>
+    <script src="./history.js"></script>
+</body>
+</html>
