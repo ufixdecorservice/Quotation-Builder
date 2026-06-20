@@ -48,6 +48,8 @@ const defaultData = {
     ],
     
     remark: 'เงื่อนไขการรับประกันงาน: รับประกันความพึงพอใจและโครงสร้างการแก้ไข 1 ปีเต็ม',
+    paymentTerms: '30% เมื่อทำสัญญา\n40% ระหว่างดำเนินการแล้ว\n30% ตอนส่งมอบ',
+    warranty: 'รับประกันงาน 5 ปี รวมวัสดุ',
     
     // Names for signatures
     sigCreatorName: 'มุรณี อูมา',
@@ -263,6 +265,8 @@ function resetForm() {
             whtRate: 0,
             items: [{ seq: '1', desc: '', qty: 1, unit: 'งาน', price: 0, isHeader: false }],
             remark: '',
+            paymentTerms: '',
+            warranty: '',
             sigCreatorName: '', sigCreatorDate: '',
             sigApproverName: '', sigApproverDate: '',
             sigCustomerName: '', sigCustomerDate: ''
@@ -338,8 +342,10 @@ function initFormBindings() {
     bindField('inp-bank-acc-name', 'prev-bank-acc-name', 'bankAccName');
     bindField('inp-bank-branch', 'prev-bank-branch', 'bankBranch');
     
-    // Remark
+    // Remark & Extra Info
     bindField('inp-remark', 'prev-remark', 'remark');
+    bindField('inp-payment-terms', 'prev-payment-terms', 'paymentTerms');
+    bindField('inp-warranty', 'prev-warranty', 'warranty');
     
     // Signature Names
     bindField('inp-sig-creator-name', 'prev-sig-creator-name', 'sigCreatorName');
@@ -475,6 +481,12 @@ function syncDataToForm() {
     setVal('inp-remark', currentData.remark);
     setAllHtml('prev-remark', currentData.remark);
     
+    setVal('inp-payment-terms', currentData.paymentTerms);
+    setAllHtml('prev-payment-terms', currentData.paymentTerms);
+    
+    setVal('inp-warranty', currentData.warranty);
+    setAllHtml('prev-warranty', currentData.warranty);
+    
     // Signatures
     setVal('inp-sig-creator-name', currentData.sigCreatorName);
     setAllHtml('prev-sig-creator-name', currentData.sigCreatorName);
@@ -600,27 +612,57 @@ function renderSidebar() {
     });
 }
 
+// Helper to calculate estimated lines for an item description
+const getItemLines = (item) => {
+    const desc = item.desc || '';
+    const lines = desc.split('\n');
+    let count = 0;
+    const charsPerLine = 45; // Estimated character length before auto-wrapping in CSS
+    
+    lines.forEach(line => {
+        const lineLength = line.length;
+        count += Math.max(1, Math.ceil(lineLength / charsPerLine));
+    });
+    
+    return count;
+};
+
+// Helper to split items based on line count (Max 16 lines per page)
+const splitItems = (items) => {
+    const pages = [];
+    if (items.length === 0) return [[]];
+    
+    let currentPage = [];
+    let currentLines = 0;
+    const maxLinesPerPage = 16;
+    
+    items.forEach((item, index) => {
+        const itemLines = getItemLines(item);
+        
+        // If page is not empty and adding this item exceeds the line limit, push to new page
+        if (currentPage.length > 0 && currentLines + itemLines > maxLinesPerPage) {
+            pages.push(currentPage);
+            currentPage = [];
+            currentLines = 0;
+        }
+        
+        currentPage.push({ item, index });
+        currentLines += itemLines;
+    });
+    
+    if (currentPage.length > 0) {
+        pages.push(currentPage);
+    }
+    
+    return pages;
+};
+
 function renderPreview() {
     const printArea = document.getElementById('print-area');
     if (!printArea) return;
     
     printArea.innerHTML = '';
     
-    // Helper to split items
-    const splitItems = (items) => {
-        const pages = [];
-        if (items.length === 0) return [[]];
-        
-        // Set back to 10 items per page, CSS will handle print spacing
-        const itemsPerPage = 10;
-        
-        for (let i = 0; i < items.length; i += itemsPerPage) {
-            pages.push(items.slice(i, i + itemsPerPage));
-        }
-        
-        return pages;
-    };
-
     const itemPages = splitItems(currentData.items);
     const totalPages = itemPages.length;
 
@@ -659,11 +701,10 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
     
     // Build table rows
     let rowsHtml = '';
-    const itemsPerPage = 10;
-    const startIndex = (pageNum - 1) * itemsPerPage;
     
-    items.forEach((item, i) => {
-        const globalIndex = startIndex + i;
+    items.forEach((itemWrapper) => {
+        const item = itemWrapper.item;
+        const globalIndex = itemWrapper.index;
         const seqValue = item.seq !== undefined && item.seq !== null ? item.seq : (globalIndex + 1);
         
         if (item.isHeader) {
@@ -756,23 +797,35 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
         footerHtml = `
             <div class="doc-footer-container">
                 <div class="doc-footer-summary">
-                    <div class="summary-left">
-                        <div class="grand-total-thai-box">
-                            <i class="fas fa-comment-dollar"></i>
-                            <span class="grand-total-thai-text prev-grand-total-thai"></span>
+                    <div class="summary-left" style="display: flex; flex-direction: column; gap: 4px;">
+                        <div>
+                            <div class="grand-total-thai-box" style="margin-bottom: 6px;">
+                                <i class="fas fa-comment-dollar"></i>
+                                <span class="grand-total-thai-text prev-grand-total-thai"></span>
+                            </div>
+                            <div class="payment-box" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 10px; margin-bottom: 6px;">
+                                <div style="display: flex; align-items: center;">
+                                    <img src="./assets/kbank.png" alt="Bank Logo" class="bank-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="bank-logo-placeholder" style="display:none; width:30px; height:30px; background:#f0f2f5; align-items:center; justify-content:center; border-radius:4px; margin-right:8px;">
+                                        <i class="fas fa-university" style="color:#cbd5e0; font-size: 14px;"></i>
+                                    </div>
+                                    <div class="bank-details" style="font-size: 8px; line-height: 1.2;">
+                                        <span class="bank-name prev-bank-name" contenteditable="true"></span>
+                                        <span class="acc-no prev-bank-acc-no" contenteditable="true"></span>
+                                        <div class="acc-name prev-bank-acc-name" contenteditable="true"></div>
+                                        <div style="font-size: 7px;" class="prev-bank-branch" contenteditable="true"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="payment-box" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                            <div style="display: flex; align-items: center;">
-                                <img src="./assets/kbank.png" alt="Bank Logo" class="bank-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <div class="bank-logo-placeholder" style="display:none; width:40px; height:40px; background:#f0f2f5; align-items:center; justify-content:center; border-radius:4px; margin-right:10px;">
-                                    <i class="fas fa-university" style="color:#cbd5e0;"></i>
-                                </div>
-                                <div class="bank-details">
-                                    <span class="bank-name prev-bank-name" contenteditable="true"></span>
-                                    <span class="acc-no prev-bank-acc-no" contenteditable="true"></span>
-                                    <div class="acc-name prev-bank-acc-name" contenteditable="true"></div>
-                                    <div style="font-size: 8px;" class="prev-bank-branch" contenteditable="true"></div>
-                                </div>
+                        <div class="footer-extra-info" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 7.5px; line-height: 1.25;">
+                            <div class="payment-terms-box" style="border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 6px; background: #fafafa;">
+                                <div style="font-weight: 700; color: var(--text-main); margin-bottom: 1px;">เงื่อนไขการชำระเงิน</div>
+                                <div class="prev-payment-terms" contenteditable="true" style="height: 5em; overflow: hidden; white-space: pre-line; color: var(--text-muted);"></div>
+                            </div>
+                            <div class="warranty-box" style="border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 6px; background: #fafafa;">
+                                <div style="font-weight: 700; color: var(--text-main); margin-bottom: 1px;">การรับประกันงาน</div>
+                                <div class="prev-warranty" contenteditable="true" style="height: 2.5em; overflow: hidden; white-space: pre-line; color: var(--text-muted);"></div>
                             </div>
                         </div>
                     </div>
@@ -786,27 +839,27 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
                         </table>
                     </div>
                 </div>
-                <div class="doc-remark">
+                <div class="doc-remark" style="margin-top: 4px;">
                     <div class="title"><i class="fas fa-sticky-note"></i> หมายเหตุ :</div>
-                    <div class="prev-remark" contenteditable="true"></div>
+                    <div class="prev-remark" contenteditable="true" style="height: 2.6em; overflow: hidden; line-height: 1.3; white-space: pre-line;"></div>
                 </div>
                 <div class="signatures-grid">
                     <div class="sig-box">
                         <div class="sig-title">ผู้ออกเอกสาร (ผู้ขาย)</div>
-                        <div class="sig-area" style="height: 35px; border-bottom: 1.5px dashed var(--border-color); margin-bottom: 15px;"></div>
+                        <div class="sig-area" style="height: 35px; border-bottom: 1.5px dashed var(--border-color); margin-bottom: 4px;"></div>
                         <div class="sig-name prev-sig-creator-name" contenteditable="true"></div>
                         <div class="sig-date prev-sig-creator-date" contenteditable="true"></div>
                     </div>
                     <div class="sig-box">
                         <div class="sig-title">ผู้อนุมัติเอกสาร (ผู้ขาย)</div>
-                        <div class="sig-area" style="height: 35px; border-bottom: 1.5px dashed var(--border-color); margin-bottom: 15px;"></div>
+                        <div class="sig-area" style="height: 35px; border-bottom: 1.5px dashed var(--border-color); margin-bottom: 4px;"></div>
                         <div class="sig-name prev-sig-approver-name" contenteditable="true"></div>
                         <div class="sig-date prev-sig-approver-date" contenteditable="true"></div>
                     </div>
                     <div class="sig-box">
                         <div class="sig-title">${isInvoice ? 'ผู้รับมอบงาน / ผู้ตรวจรับ' : 'ผู้รับเอกสาร (ลูกค้า)'}</div>
                         <div style="position: relative;">
-                            <div class="sig-area" style="height: 35px; border-bottom: 1.5px dashed var(--border-color); margin-bottom: 15px;"></div>
+                            <div class="sig-area" style="height: 35px; border-bottom: 1.5px dashed var(--border-color); margin-bottom: 4px;"></div>
                             <div class="sig-stamp-placeholder" style="position: absolute; top: -5px; right: 0; width: 45px; height: 45px; border: 1.5px dotted #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #ccc; pointer-events: none; transform: rotate(15deg);">ตราประทับ</div>
                         </div>
                         <div class="sig-name prev-sig-customer-name" contenteditable="true"></div>

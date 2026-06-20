@@ -4,7 +4,7 @@
 
 const GSheetAPI = {
     // SINGLE GATEWAY URL (Requirement) - Updated 18/06/2569
-    URL: 'https://script.google.com/macros/s/AKfycbzOOs17j-E6pnPVJj6OTXMepfnlQhpeVCSMEAsKrCPY_XbWzu0hF564HWIdlzRF2dsg0w/exec',
+    URL: 'https://script.google.com/macros/s/AKfycbylyaZHU4ANWqsWoqEGgZ8Qv1cmqlch00DDpBOLTMgk2h4xSZzf19ZNenG6ZvoRpHi1Bw/exec',
 
     async call(action, data = {}) {
         const payload = {

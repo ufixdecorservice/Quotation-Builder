@@ -745,7 +745,7 @@ body {
     border: 1px solid var(--border-color);
     background-color: #f7fafc;
     border-radius: 4px;
-    padding: 8px 12px;
+    padding: 4px 8px;
     font-size: 11px;
     display: flex;
     align-items: center;
@@ -763,7 +763,7 @@ body {
 .payment-box {
     border: 1.5px solid var(--border-color);
     border-radius: 6px;
-    padding: 10px 12px;
+    padding: 4px 8px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -851,11 +851,11 @@ body {
 
 /* Document Remark Box - Single Line Style */
 .doc-remark {
-    margin-top: 3px;
-    margin-bottom: 3px;
+    margin-top: 2px;
+    margin-bottom: 2px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    padding: 2px 10px;
+    padding: 2px 6px;
     font-size: 10px;
     display: flex;
     align-items: baseline;
@@ -881,13 +881,13 @@ body {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 15px;
-    margin-top: 15px;
+    margin-top: 6px;
 }
 
 .sig-box {
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    padding: 10px;
+    padding: 6px;
     text-align: center;
     font-size: 10px;
     background-color: white;
