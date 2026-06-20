@@ -660,6 +660,23 @@ body {
     line-height: 1.4;
 }
 
+/* Header Row / No Price Items styling */
+.items-table tr.item-row-header {
+    background-color: transparent !important;
+}
+.items-table tr.item-row-header td {
+    font-weight: 400;
+    color: inherit;
+}
+.items-table tr.item-row-header .item-desc {
+    font-weight: 500;
+    font-size: 11px;
+    color: inherit;
+    -webkit-line-clamp: unset; /* Allow longer title text without clipping on headers */
+    max-height: none;
+    overflow: visible;
+}
+
 .item-notes {
     font-size: 9.5px;
     color: var(--text-muted);

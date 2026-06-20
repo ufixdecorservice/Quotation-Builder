@@ -10,13 +10,83 @@
         .history-container { padding: 30px; max-width: 1200px; margin: 0 auto; }
         .history-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         .history-table th { background: var(--primary-color); color: white; padding: 15px; text-align: left; }
-        .history-table td { padding: 15px; border-bottom: 1px solid #edf2f7; }
-        .history-table tr:hover { background: #f7fafc; cursor: pointer; }
+        .history-table td { padding: 15px; border-bottom: 1px solid #edf2f7; vertical-align: middle; }
+        .history-table tr:hover { background: #f7fafc; }
         .search-box { margin-bottom: 20px; display: flex; gap: 10px; }
-        .search-box input { flex-grow: 1; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; }
-        .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
-        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
-        .status-active { background: #c6f6d5; color: #22543d; }
+        .search-box input { flex-grow: 1; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-family: var(--font-family); }
+        
+        /* Action buttons layout */
+        .action-buttons { display: flex; gap: 8px; justify-content: center; align-items: center; }
+        
+        /* Premium Action Buttons style */
+        .btn-action { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 6px; 
+            padding: 8px 14px; 
+            font-size: 0.85rem; 
+            font-weight: 600; 
+            border-radius: 8px; 
+            border: none; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            min-height: auto; 
+            width: auto;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+            font-family: var(--font-family);
+        }
+        .btn-action i { font-size: 0.9rem; }
+        
+        .btn-action-edit { 
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-hover) 100%); 
+            color: white; 
+        }
+        .btn-action-edit:hover { 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 8px rgba(128, 90, 213, 0.3); 
+        }
+        
+        .btn-action-invoice { 
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); 
+            color: white; 
+        }
+        .btn-action-invoice:hover { 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 8px rgba(56, 161, 105, 0.3); 
+        }
+        
+        .btn-action-delete { 
+            background: #ffebee; 
+            color: #c62828; 
+        }
+        .btn-action-delete:hover { 
+            background: #ef5350; 
+            color: white; 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 8px rgba(239, 83, 80, 0.3); 
+        }
+
+        /* Document Type Badges */
+        .doc-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .badge-quotation {
+            background-color: #f3e8ff;
+            color: #6b21a8;
+            border: 1px solid #e9d5ff;
+        }
+        .badge-invoice {
+            background-color: #fef3c7;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
     </style>
 </head>
 <body style="background: #f8fafc;">
@@ -25,7 +95,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
             <h2><i class="fas fa-history" style="color:var(--primary-color);"></i> ประวัติใบเสนอราคา</h2>
             <div>
-                <button onclick="window.location.href='index.html'" class="btn btn-primary"><i class="fas fa-plus"></i> สร้างใบเสนอราคา</button>
+                <button onclick="createNewQuotation()" class="btn btn-primary"><i class="fas fa-plus"></i> สร้างใบเสนอราคา</button>
                 <button onclick="AuthSystem.logout()" class="btn btn-danger" style="padding:10px;"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
@@ -40,6 +110,7 @@
                 <thead>
                     <tr>
                         <th>เลขที่เอกสาร</th>
+                        <th>ประเภท</th>
                         <th>วันที่</th>
                         <th>ชื่อลูกค้า</th>
                         <th>ยอดรวมเงิน</th>

@@ -5,6 +5,7 @@
 // Default dummy data based on the PEAK Account example provided by the user
 const defaultData = {
     theme: 'purple',
+    docType: 'quotation', // quotation = Quotation, invoice = Work Completion & Invoice
     docCopyMode: 'both', // both = Set of 2, original = Original Only, copy = Copy Only
     documentNo: 'UF-00000000001',
     dateCreated: '2026-03-05',
@@ -42,8 +43,8 @@ const defaultData = {
     
     // Document Items List
     items: [
-        { desc: 'ใส่งานที่นี่', qty: 1, unit: 'งาน', price: 60000 },
-        { desc: 'ใส่งานที่นี์', qty: 1, unit: 'งาน', price: 5000 },
+        { seq: '1', desc: 'ใส่งานที่นี่', qty: 1, unit: 'งาน', price: 60000, isHeader: false },
+        { seq: '2', desc: 'ใส่งานที่นี์', qty: 1, unit: 'งาน', price: 5000, isHeader: false },
     ],
     
     remark: 'เงื่อนไขการรับประกันงาน: รับประกันความพึงพอใจและโครงสร้างการแก้ไข 1 ปีเต็ม',
@@ -248,6 +249,7 @@ function resetForm() {
     if (confirm('คุณต้องการเริ่มสร้างใหม่ทั้งหมดใช่หรือไม่?')) {
         currentData = {
             theme: 'purple',
+            docType: 'quotation',
             docCopyMode: 'both',
             documentNo: 'QO-' + new Date().getFullYear() + String(new Date().getMonth() + 1).padStart(2, '0') + '00001',
             dateCreated: new Date().toISOString().split('T')[0],
@@ -259,7 +261,7 @@ function resetForm() {
             bankName: 'ธ.กสิกรไทย', bankAccNo: '', bankAccName: '', bankBranch: 'ออมทรัพย์',
             includeVat: true,
             whtRate: 0,
-            items: [{ desc: '', qty: 1, unit: 'งาน', price: 0 }],
+            items: [{ seq: '1', desc: '', qty: 1, unit: 'งาน', price: 0, isHeader: false }],
             remark: '',
             sigCreatorName: '', sigCreatorDate: '',
             sigApproverName: '', sigApproverDate: '',
@@ -363,6 +365,19 @@ function initFormBindings() {
         inpWhtRate.addEventListener('change', (e) => {
             currentData.whtRate = parseInt(e.target.value);
             calculateTotals();
+        });
+    }
+
+    const inpDocType = document.getElementById('inp-doc-type');
+    if (inpDocType) {
+        inpDocType.value = currentData.docType || 'quotation';
+        inpDocType.addEventListener('change', (e) => {
+            currentData.docType = e.target.value;
+            const mobilePreviewSpan = document.querySelector('#btn-mobile-preview span');
+            if (mobilePreviewSpan) {
+                mobilePreviewSpan.innerText = e.target.value === 'invoice' ? 'ดูใบส่งมอบงาน' : 'ดูใบเสนอราคา';
+            }
+            renderPreview();
         });
     }
 
@@ -490,6 +505,13 @@ function syncDataToForm() {
 
     checkEl('inp-include-vat', currentData.includeVat);
     setValEl('inp-wht-rate', currentData.whtRate);
+    setValEl('inp-doc-type', currentData.docType || 'quotation');
+    
+    const mobilePreviewSpan = document.querySelector('#btn-mobile-preview span');
+    if (mobilePreviewSpan) {
+        mobilePreviewSpan.innerText = currentData.docType === 'invoice' ? 'ดูใบส่งมอบงาน' : 'ดูใบเสนอราคา';
+    }
+
     setValEl('inp-doc-copy-mode', currentData.docCopyMode);
 
     // Update QR Codes dynamically
@@ -520,30 +542,46 @@ function updatePageVisibility() {
 
 // Item Table Management
 function renderItems() {
+    renderSidebar();
+    renderPreview();
+}
+
+function renderSidebar() {
     const listContainer = document.getElementById('sidebar-items-list');
-    const printArea = document.getElementById('print-area');
+    if (!listContainer) return;
     
-    if (!listContainer || !printArea) return;
-    
-    // 1. Render item entry in the Sidebar Control (always shows all items)
     listContainer.innerHTML = '';
     currentData.items.forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'sidebar-section';
         div.style.marginBottom = '10px';
         div.style.padding = '10px';
-        div.style.backgroundColor = '#ffffff';
+        div.style.backgroundColor = item.isHeader ? '#f3f0ff' : '#ffffff';
+        div.style.borderLeft = item.isHeader ? '4px solid var(--primary-color)' : 'none';
+        
         div.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <span style="font-weight:600; font-size:0.8rem;">รายการที่ ${index + 1}</span>
-                <button class="row-actions-btn" style="opacity:1; color:var(--danger-color);" onclick="deleteItem(${index})">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <span style="font-weight:600; font-size:0.8rem; color:${item.isHeader ? 'var(--primary-color)' : 'inherit'}">รายการที่ ${index + 1} ${item.isHeader ? '(หัวข้อหลัก)' : ''}</span>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <label style="margin:0; font-size:0.75rem; display:flex; align-items:center; gap:4px; cursor:pointer;">
+                        <input type="checkbox" ${item.isHeader ? 'checked' : ''} onchange="updateItemField(${index}, 'isHeader', this.checked)"> หัวข้อหลัก
+                    </label>
+                    <button class="row-actions-btn" style="opacity:1; color:var(--danger-color); padding:0; background:none; border:none; cursor:pointer;" onclick="deleteItem(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
-            <div class="form-group">
-                <input type="text" class="form-control" placeholder="รายละเอียดรายการงาน" value="${item.desc}" oninput="updateItemField(${index}, 'desc', this.value)">
+            <div style="display:grid; grid-template-columns: 80px 1fr; gap:10px; margin-bottom:12px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>ลำดับ</label>
+                    <input type="text" class="form-control" value="${item.seq !== undefined && item.seq !== null ? item.seq : index + 1}" oninput="updateItemField(${index}, 'seq', this.value)">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>รายละเอียด</label>
+                    <input type="text" class="form-control" placeholder="${item.isHeader ? 'ระบุรายละเอียดหัวข้อหลัก (เช่น ขอบเขตงาน หรือพาร์ทงาน)' : 'รายละเอียดรายการงาน'}" value="${item.desc}" oninput="updateItemField(${index}, 'desc', this.value)">
+                </div>
             </div>
-            <div class="row-2">
+            <div class="row-2" style="${item.isHeader ? 'display:none;' : ''}">
                 <div class="form-group">
                     <label>จำนวน</label>
                     <input type="number" step="any" class="form-control" value="${item.qty}" oninput="updateItemField(${index}, 'qty', this.value)">
@@ -553,15 +591,19 @@ function renderItems() {
                     <input type="text" class="form-control" value="${item.unit}" oninput="updateItemField(${index}, 'unit', this.value)">
                 </div>
             </div>
-            <div class="form-group" style="margin-bottom:0;">
+            <div class="form-group" style="margin-bottom:0; ${item.isHeader ? 'display:none;' : ''}">
                 <label>ราคาต่อหน่วย (บาท)</label>
                 <input type="number" step="any" class="form-control" value="${item.price}" oninput="updateItemField(${index}, 'price', this.value)">
             </div>
         `;
         listContainer.appendChild(div);
     });
+}
 
-    // 2. Dynamic Pagination for Preview
+function renderPreview() {
+    const printArea = document.getElementById('print-area');
+    if (!printArea) return;
+    
     printArea.innerHTML = '';
     
     // Helper to split items
@@ -598,7 +640,7 @@ function renderItems() {
         });
     }
 
-    // 3. Sync all data to the newly created elements
+    // Sync all data to the newly created elements
     syncDataToForm();
     calculateTotals();
 }
@@ -610,6 +652,11 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
     const pageId = isCopy ? `page-copy-${pageNum}` : `page-orig-${pageNum}`;
     const badgeStyle = (currentData.docCopyMode === 'both') ? '' : 'display:none;';
     
+    const isInvoice = currentData.docType === 'invoice';
+    const docTitleHtml = isInvoice 
+        ? `ใบส่งมอบงานและใบเรียกเก็บเงิน<br><span style="font-size: 10px; font-weight: 600; color: var(--text-muted); display: block; margin-top: 2px;">Work Completion & Invoice</span>`
+        : `ใบเสนอราคา`;
+    
     // Build table rows
     let rowsHtml = '';
     const itemsPerPage = 10;
@@ -617,17 +664,32 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
     
     items.forEach((item, i) => {
         const globalIndex = startIndex + i;
-        const amount = item.qty * item.price;
-        rowsHtml += `
-            <tr class="item-row">
-                <td class="center">${globalIndex + 1}</td>
-                <td><div class="item-desc" contenteditable="true" onblur="updateItemField(${globalIndex}, 'desc', this.innerText)">${item.desc}</div></td>
-                <td class="right" contenteditable="true" onblur="updateItemField(${globalIndex}, 'qty', this.innerText)">${formatNumber(item.qty)}</td>
-                <td class="center" contenteditable="true" onblur="updateItemField(${globalIndex}, 'unit', this.innerText)">${item.unit}</td>
-                <td class="right" contenteditable="true" onblur="updateItemField(${globalIndex}, 'price', this.innerText)">${formatNumber(item.price)}</td>
-                <td class="right">${formatNumber(amount)}</td>
-            </tr>
-        `;
+        const seqValue = item.seq !== undefined && item.seq !== null ? item.seq : (globalIndex + 1);
+        
+        if (item.isHeader) {
+            rowsHtml += `
+                <tr class="item-row item-row-header">
+                    <td class="center" contenteditable="true" onblur="updateItemField(${globalIndex}, 'seq', this.innerText)">${seqValue}</td>
+                    <td><div class="item-desc" contenteditable="true" onblur="updateItemField(${globalIndex}, 'desc', this.innerText)">${item.desc}</div></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            `;
+        } else {
+            const amount = item.qty * item.price;
+            rowsHtml += `
+                <tr class="item-row">
+                    <td class="center" contenteditable="true" onblur="updateItemField(${globalIndex}, 'seq', this.innerText)">${seqValue}</td>
+                    <td><div class="item-desc" contenteditable="true" onblur="updateItemField(${globalIndex}, 'desc', this.innerText)">${item.desc}</div></td>
+                    <td class="right" contenteditable="true" onblur="updateItemField(${globalIndex}, 'qty', this.innerText)">${formatNumber(item.qty)}</td>
+                    <td class="center" contenteditable="true" onblur="updateItemField(${globalIndex}, 'unit', this.innerText)">${item.unit}</td>
+                    <td class="right" contenteditable="true" onblur="updateItemField(${globalIndex}, 'price', this.innerText)">${formatNumber(item.price)}</td>
+                    <td class="right">${formatNumber(amount)}</td>
+                </tr>
+            `;
+        }
     });
 
     // Header HTML
@@ -645,7 +707,7 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
                     <span class="doc-page-num">หน้า ${pageNum}/${totalPages}</span>
                 </div>
                 <span class="doc-title-badge">${typeLabel}</span>
-                <h2 class="doc-title">ใบเสนอราคา</h2>
+                <h2 class="doc-title" style="${isInvoice ? 'font-size: 17px; line-height: 1.2; margin-top: 8px;' : ''}">${docTitleHtml}</h2>
             </div>
         </div>
     `;
@@ -716,7 +778,7 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
                     </div>
                     <div class="summary-right">
                         <table class="calc-table">
-                            <tr><td>มูลค่าตามใบเสนอราคา:</td><td class="prev-subtotal"></td></tr>
+                            <tr><td>${isInvoice ? 'มูลค่าตามใบแจ้งหนี้:' : 'มูลค่าตามใบเสนอราคา:'}</td><td class="prev-subtotal"></td></tr>
                             <tr class="prev-vat-row"><td>ภาษีมูลค่าเพิ่ม (VAT 7%):</td><td class="prev-vat"></td></tr>
                             <tr class="total-row"><td>จำนวนเงินทั้งสิ้น:</td><td class="prev-grand-total"></td></tr>
                             <tr class="prev-wht-row" style="display:none;"><td class="prev-wht-label"></td><td class="prev-wht-amount"></td></tr>
@@ -742,7 +804,7 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
                         <div class="sig-date prev-sig-approver-date" contenteditable="true"></div>
                     </div>
                     <div class="sig-box">
-                        <div class="sig-title">ผู้รับเอกสาร (ลูกค้า)</div>
+                        <div class="sig-title">${isInvoice ? 'ผู้รับมอบงาน / ผู้ตรวจรับ' : 'ผู้รับเอกสาร (ลูกค้า)'}</div>
                         <div style="position: relative;">
                             <div class="sig-area" style="height: 35px; border-bottom: 1.5px dashed var(--border-color); margin-bottom: 15px;"></div>
                             <div class="sig-stamp-placeholder" style="position: absolute; top: -5px; right: 0; width: 45px; height: 45px; border: 1.5px dotted #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #ccc; pointer-events: none; transform: rotate(15deg);">ตราประทับ</div>
@@ -788,6 +850,10 @@ function updateItemField(index, field, value) {
     if (field === 'qty' || field === 'price') {
         const val = parseFloat(value.replace(/,/g, ''));
         currentData.items[index][field] = isNaN(val) ? 0 : val;
+    } else if (field === 'isHeader') {
+        currentData.items[index][field] = !!value;
+    } else if (field === 'seq') {
+        currentData.items[index][field] = value;
     } else {
         currentData.items[index][field] = value;
     }
@@ -795,23 +861,18 @@ function updateItemField(index, field, value) {
     // Calculate totals to update all pages
     calculateTotals();
     
-    // We only re-render the list and preview if the input was from sidebar
-    // If it was from contenteditable, we update other pages' specific cells to avoid re-rendering and losing focus
-    if (document.activeElement.tagName !== 'DIV') {
-        renderItems();
-    } else {
-        // Sync the change to all other pages manually to avoid re-render focus loss
-        const valFormatted = (field === 'qty' || field === 'price') ? formatNumber(currentData.items[index][field]) : value;
-        const subtotalFormatted = formatNumber(currentData.items[index].qty * currentData.items[index].price);
-        
-        // Find all pages and update the specific cell
-        // This is simplified; in a production app we'd use data-attributes
-        renderItems(); // For now, just re-render. User might lose focus but it's safer.
+    // Update preview A4 only
+    renderPreview();
+    
+    // If toggling header mode, recreate sidebar fields to hide price inputs
+    if (field === 'isHeader') {
+        renderSidebar();
     }
 }
 
 function addItem() {
-    currentData.items.push({ desc: '', qty: 1, unit: 'งาน', price: 0 });
+    const nextSeq = currentData.items.length + 1;
+    currentData.items.push({ seq: String(nextSeq), desc: '', qty: 1, unit: 'งาน', price: 0, isHeader: false });
     renderItems();
 }
 
@@ -828,7 +889,9 @@ function deleteItem(index) {
 function calculateTotals() {
     let subtotal = 0;
     currentData.items.forEach(item => {
-        subtotal += (item.qty || 0) * (item.price || 0);
+        if (!item.isHeader) {
+            subtotal += (item.qty || 0) * (item.price || 0);
+        }
     });
     
     let vat = 0;
