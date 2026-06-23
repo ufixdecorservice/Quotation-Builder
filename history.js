@@ -3,15 +3,34 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Inject History Button into Sidebar Footer if on main page
-    const footer = document.querySelector('.sidebar-footer');
-    if (footer && !window.location.pathname.includes('history.html')) {
-        const historyBtn = document.createElement('button');
-        historyBtn.className = 'btn btn-secondary';
-        historyBtn.style.marginTop = '8px';
-        historyBtn.innerHTML = '<i class="fas fa-history"></i> เปิดหน้าประวัติ Cloud';
-        historyBtn.onclick = () => window.location.href = 'history.html';
-        footer.appendChild(historyBtn);
+    // Set up click handler for History Button in Sidebar
+    const historyBtn = document.getElementById('btn-open-history');
+    if (historyBtn) {
+        historyBtn.onclick = (e) => {
+            if (window.isFormDirty && typeof window.isFormDirty === 'function' && window.isFormDirty()) {
+                if (!confirm('ข้อมูลปัจจุบันยังไม่ได้บันทึก คุณต้องการเปิดหน้าประวัติโดยไม่บันทึกใช่หรือไม่?')) {
+                    return;
+                }
+            }
+            window.location.href = 'history.html';
+        };
+    } else {
+        const footer = document.querySelector('.sidebar-footer');
+        if (footer && !window.location.pathname.includes('history.html')) {
+            const newBtn = document.createElement('button');
+            newBtn.id = 'btn-open-history';
+            newBtn.className = 'btn btn-secondary';
+            newBtn.innerHTML = '<i class="fas fa-history"></i> ประวัติ Cloud';
+            newBtn.onclick = () => {
+                if (window.isFormDirty && typeof window.isFormDirty === 'function' && window.isFormDirty()) {
+                    if (!confirm('ข้อมูลปัจจุบันยังไม่ได้บันทึก คุณต้องการเปิดหน้าประวัติโดยไม่บันทึกใช่หรือไม่?')) {
+                        return;
+                    }
+                }
+                window.location.href = 'history.html';
+            };
+            footer.appendChild(newBtn);
+        }
     }
 
     if (AuthSystem.isLoggedIn() && window.location.pathname.includes('history.html')) {
@@ -44,15 +63,26 @@ function renderTable(items) {
     }
 
     items.forEach(item => {
+        const isReceipt = item.docType === 'receipt' || (item.quotationNo && item.quotationNo.toUpperCase().includes('-REC'));
         const isInvoice = item.docType === 'invoice' || (item.quotationNo && item.quotationNo.toUpperCase().includes('-INV'));
-        const docBadgeHtml = isInvoice 
-            ? `<span class="doc-badge badge-invoice"><i class="fas fa-file-invoice"></i> ใบเรียกเก็บเงิน</span>`
-            : `<span class="doc-badge badge-quotation"><i class="fas fa-file-invoice-dollar"></i> ใบเสนอราคา</span>`;
         
-        // Show create invoice button only if it's a quotation
-        const invoiceBtnHtml = !isInvoice
-            ? `<button onclick="createInvoice('${item.quotationNo}')" class="btn-action btn-action-invoice"><i class="fas fa-file-invoice"></i> ออกใบแจ้งหนี้</button>`
-            : '';
+        let docBadgeHtml = '';
+        if (isReceipt) {
+            docBadgeHtml = `<span class="doc-badge badge-receipt"><i class="fas fa-receipt"></i> ใบเสร็จรับเงิน</span>`;
+        } else if (isInvoice) {
+            docBadgeHtml = `<span class="doc-badge badge-invoice"><i class="fas fa-file-invoice"></i> ใบเรียกเก็บเงิน</span>`;
+        } else {
+            docBadgeHtml = `<span class="doc-badge badge-quotation"><i class="fas fa-file-invoice-dollar"></i> ใบเสนอราคา</span>`;
+        }
+        
+        // Show create invoice / receipt buttons based on document type
+        let convertBtnsHtml = '';
+        if (!isReceipt) {
+            if (!isInvoice) {
+                convertBtnsHtml += `<button onclick="createInvoice('${item.quotationNo}')" class="btn-action btn-action-invoice"><i class="fas fa-file-invoice"></i> ออกใบแจ้งหนี้</button>`;
+            }
+            convertBtnsHtml += `<button onclick="createReceipt('${item.quotationNo}')" class="btn-action btn-action-receipt"><i class="fas fa-receipt"></i> ออกใบเสร็จ</button>`;
+        }
 
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -64,7 +94,7 @@ function renderTable(items) {
             <td style="text-align:center;">
                 <div class="action-buttons">
                     <button onclick="editQuotation('${item.quotationNo}')" class="btn-action btn-action-edit"><i class="fas fa-edit"></i> แก้ไข</button>
-                    ${invoiceBtnHtml}
+                    ${convertBtnsHtml}
                     <button onclick="deleteQuotation('${item.quotationNo}')" class="btn-action btn-action-delete"><i class="fas fa-trash"></i> ลบ</button>
                 </div>
             </td>
@@ -93,8 +123,9 @@ async function createInvoice(docNo) {
             const data = JSON.parse(res.jsonData);
             data.docType = 'invoice';
             if (data.documentNo) {
-                // Append -INV to make it a distinct document and prevent overwriting the original quotation
-                data.documentNo = data.documentNo + '-INV';
+                // Remove existing -INV or -REC before appending -INV
+                let cleanNo = data.documentNo.replace(/-INV$/i, '').replace(/-REC$/i, '');
+                data.documentNo = cleanNo + '-INV';
             }
             // Store in localStorage so index.html loads it as an invoice
             localStorage.setItem('quotation_builder_data', JSON.stringify(data));
@@ -102,6 +133,26 @@ async function createInvoice(docNo) {
         }
     } catch (e) {
         alert('โหลดข้อมูลใบเสนอราคาเพื่อออกใบแจ้งหนี้ไม่สำเร็จ');
+    }
+}
+
+async function createReceipt(docNo) {
+    try {
+        const res = await GSheetAPI.call('get_quotation', { quotationNo: docNo });
+        if (res.success) {
+            const data = JSON.parse(res.jsonData);
+            data.docType = 'receipt';
+            if (data.documentNo) {
+                // Remove existing -INV or -REC before appending -REC
+                let cleanNo = data.documentNo.replace(/-INV$/i, '').replace(/-REC$/i, '');
+                data.documentNo = cleanNo + '-REC';
+            }
+            // Store in localStorage so index.html loads it as a receipt
+            localStorage.setItem('quotation_builder_data', JSON.stringify(data));
+            window.location.href = 'index.html';
+        }
+    } catch (e) {
+        alert('โหลดข้อมูลเพื่อออกใบเสร็จรับเงินไม่สำเร็จ');
     }
 }
 

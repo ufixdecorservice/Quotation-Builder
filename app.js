@@ -7,7 +7,7 @@ const defaultData = {
     theme: 'purple',
     docType: 'quotation', // quotation = Quotation, invoice = Work Completion & Invoice
     docCopyMode: 'both', // both = Set of 2, original = Original Only, copy = Copy Only
-    documentNo: 'UF-00000000001',
+    documentNo: '', // ปล่อยว่างเพื่อรันเลขให้อัตโนมัติเมื่อบันทึกขึ้น Cloud
     dateCreated: '2026-03-05',
     dateExpired: '2026-03-12',
     dateAccepted: '-',
@@ -82,6 +82,19 @@ function toggleSidebar() {
 
 // Global state
 let currentData = {};
+let formIsDirty = false;
+window.isFormDirty = () => formIsDirty;
+window.markFormDirty = () => { formIsDirty = true; };
+window.clearFormDirty = () => { formIsDirty = false; };
+
+// Prompt user before closing/refreshing if form is dirty
+window.addEventListener('beforeunload', (e) => {
+    if (formIsDirty) {
+        e.preventDefault();
+        e.returnValue = 'ข้อมูลปัจจุบันยังไม่ได้บันทึก คุณต้องการออกจากหน้านี้ใช่หรือไม่?';
+        return e.returnValue;
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
@@ -152,6 +165,7 @@ function initApp() {
     });
     bindBtn('btn-save-draft', saveDraft);
     bindBtn('btn-load-sample', loadSampleData);
+    bindBtn('btn-new-quotation', resetForm);
     bindBtn('btn-reset', resetForm);
     
     // Theme buttons
@@ -201,7 +215,7 @@ function renderTheme(theme) {
 // Load data with safe merge to prevent undefined errors from stale data
 function loadData() {
     const saved = localStorage.getItem('quotation_builder_data');
-    currentData = { ...defaultData };
+    currentData = JSON.parse(JSON.stringify(defaultData)); // Deep copy defaultData
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
@@ -210,6 +224,15 @@ function loadData() {
             console.error('JSON Parse error on loaded data:', e);
         }
     }
+    
+    // Fallback for seller details if draft contains empty/invalid values (Prevents missing seller info bug)
+    const isInvalidSellerField = (val) => !val || val.trim() === '' || val.trim() === '-';
+    
+    if (isInvalidSellerField(currentData.sellerName)) currentData.sellerName = defaultData.sellerName;
+    if (isInvalidSellerField(currentData.sellerTaxId)) currentData.sellerTaxId = defaultData.sellerTaxId;
+    if (isInvalidSellerField(currentData.sellerAddress)) currentData.sellerAddress = defaultData.sellerAddress;
+    if (isInvalidSellerField(currentData.sellerPhone)) currentData.sellerPhone = defaultData.sellerPhone;
+    if (isInvalidSellerField(currentData.sellerEmail)) currentData.sellerEmail = defaultData.sellerEmail;
 }
 
 // Save current state as draft
@@ -232,6 +255,7 @@ async function saveDraft() {
     } else {
         alert('บันทึกแบบร่างลงเครื่องสำเร็จ (แต่ยังไม่ได้ส่งขึ้น Cloud)');
     }
+    formIsDirty = false;
 }
 
 // Load default template data
@@ -243,6 +267,7 @@ function loadSampleData() {
         renderTheme(currentData.theme);
         updatePageVisibility();
         alert('โหลดข้อมูลตัวอย่างสำเร็จแล้ว!');
+        formIsDirty = false;
     }
 }
 
@@ -253,11 +278,15 @@ function resetForm() {
             theme: 'purple',
             docType: 'quotation',
             docCopyMode: 'both',
-            documentNo: 'QO-' + new Date().getFullYear() + String(new Date().getMonth() + 1).padStart(2, '0') + '00001',
+            documentNo: '', // ปล่อยว่างเพื่อให้ออกเลขจ๊อบใหม่โดยอัตโนมัติ
             dateCreated: new Date().toISOString().split('T')[0],
             dateExpired: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             dateAccepted: '-',
-            sellerName: '', sellerTaxId: '', sellerAddress: '', sellerPhone: '', sellerEmail: '',
+            sellerName: defaultData.sellerName,
+            sellerTaxId: defaultData.sellerTaxId,
+            sellerAddress: defaultData.sellerAddress,
+            sellerPhone: defaultData.sellerPhone,
+            sellerEmail: defaultData.sellerEmail,
             customerName: '', customerTaxId: '', customerAddress: '', customerPhone: '', customerEmail: '',
             contactPerson: '', contactPhone: '', contactEmail: '',
             bankName: 'ธ.กสิกรไทย', bankAccNo: '', bankAccName: '', bankBranch: 'ออมทรัพย์',
@@ -274,6 +303,7 @@ function resetForm() {
         calculateTotals();
         syncDataToForm();
         updatePageVisibility();
+        formIsDirty = false;
     }
 }
 
@@ -285,26 +315,49 @@ function initFormBindings() {
         if (input) {
             // Set initial values
             input.value = currentData[dataKey] || '';
+            if (dataKey === 'documentNo' && input.value === '') {
+                input.placeholder = 'ระบบจะรันเลขที่ให้อัตโนมัติเมื่อบันทึก';
+            }
             document.querySelectorAll('.' + previewClass).forEach(el => {
-                el.innerText = currentData[dataKey] || '';
+                if (dataKey === 'documentNo') {
+                    el.innerText = currentData[dataKey] || '(รันเลขให้อัตโนมัติเมื่อบันทึก)';
+                } else {
+                    el.innerText = currentData[dataKey] || '';
+                }
             });
             
             // Input updates state and all previews
             input.addEventListener('input', (e) => {
                 currentData[dataKey] = e.target.value;
+                formIsDirty = true;
                 document.querySelectorAll('.' + previewClass).forEach(el => {
-                    el.innerText = e.target.value;
+                    if (dataKey === 'documentNo') {
+                        el.innerText = e.target.value || '(รันเลขให้อัตโนมัติเมื่อบันทึก)';
+                    } else {
+                        el.innerText = e.target.value;
+                    }
                 });
             });
             
             // Preview edits (delegated to document for dynamic elements)
             document.addEventListener('blur', (e) => {
                 if (e.target.classList.contains(previewClass)) {
-                    currentData[dataKey] = e.target.innerText;
-                    input.value = e.target.innerText;
+                    // Prevent editing placeholder text
+                    let newText = e.target.innerText;
+                    if (dataKey === 'documentNo' && newText === '(รันเลขให้อัตโนมัติเมื่อบันทึก)') {
+                        newText = '';
+                    }
+                    currentData[dataKey] = newText;
+                    input.value = newText;
                     // Sync other previews of the same class
                     document.querySelectorAll('.' + previewClass).forEach(el => {
-                        if (el !== e.target) el.innerText = e.target.innerText;
+                        if (el !== e.target) {
+                            if (dataKey === 'documentNo') {
+                                el.innerText = newText || '(รันเลขให้อัตโนมัติเมื่อบันทึก)';
+                            } else {
+                                el.innerText = newText;
+                            }
+                        }
                     });
                 }
             }, true);
@@ -361,6 +414,7 @@ function initFormBindings() {
         inpIncludeVat.checked = currentData.includeVat;
         inpIncludeVat.addEventListener('change', (e) => {
             currentData.includeVat = e.target.checked;
+            formIsDirty = true;
             calculateTotals();
         });
     }
@@ -370,6 +424,7 @@ function initFormBindings() {
         inpWhtRate.value = currentData.whtRate;
         inpWhtRate.addEventListener('change', (e) => {
             currentData.whtRate = parseInt(e.target.value);
+            formIsDirty = true;
             calculateTotals();
         });
     }
@@ -379,9 +434,16 @@ function initFormBindings() {
         inpDocType.value = currentData.docType || 'quotation';
         inpDocType.addEventListener('change', (e) => {
             currentData.docType = e.target.value;
+            formIsDirty = true;
             const mobilePreviewSpan = document.querySelector('#btn-mobile-preview span');
             if (mobilePreviewSpan) {
-                mobilePreviewSpan.innerText = e.target.value === 'invoice' ? 'ดูใบส่งมอบงาน' : 'ดูใบเสนอราคา';
+                if (e.target.value === 'receipt') {
+                    mobilePreviewSpan.innerText = 'ดูใบเสร็จรับเงิน';
+                } else if (e.target.value === 'invoice') {
+                    mobilePreviewSpan.innerText = 'ดูใบส่งมอบงาน';
+                } else {
+                    mobilePreviewSpan.innerText = 'ดูใบเสนอราคา';
+                }
             }
             renderPreview();
         });
@@ -392,6 +454,7 @@ function initFormBindings() {
         inpDocCopyMode.value = currentData.docCopyMode;
         inpDocCopyMode.addEventListener('change', (e) => {
             currentData.docCopyMode = e.target.value;
+            formIsDirty = true;
             renderItems();
         });
     }
@@ -405,14 +468,22 @@ function syncDataToForm() {
         const el = document.getElementById(id);
         if (el) el.value = val || '';
     };
+
     const setAllHtml = (cls, val) => {
         document.querySelectorAll('.' + cls).forEach(el => {
-            el.innerText = val || '';
+            el.innerHTML = val || '';
         });
     };
 
     setVal('inp-doc-no', currentData.documentNo);
-    setAllHtml('prev-doc-no', currentData.documentNo);
+    const docNoInput = document.getElementById('inp-doc-no');
+    if (docNoInput && (!currentData.documentNo || currentData.documentNo === '')) {
+        docNoInput.placeholder = 'ระบบจะรันเลขที่ให้อัตโนมัติเมื่อบันทึก';
+    }
+    
+    document.querySelectorAll('.prev-doc-no').forEach(el => {
+        el.innerText = currentData.documentNo || '(รันเลขให้อัตโนมัติเมื่อบันทึก)';
+    });
 
     setVal('inp-date-created', currentData.dateCreated);
     setAllHtml('prev-date-created', currentData.dateCreated);
@@ -521,7 +592,13 @@ function syncDataToForm() {
     
     const mobilePreviewSpan = document.querySelector('#btn-mobile-preview span');
     if (mobilePreviewSpan) {
-        mobilePreviewSpan.innerText = currentData.docType === 'invoice' ? 'ดูใบส่งมอบงาน' : 'ดูใบเสนอราคา';
+        if (currentData.docType === 'receipt') {
+            mobilePreviewSpan.innerText = 'ดูใบเสร็จรับเงิน';
+        } else if (currentData.docType === 'invoice') {
+            mobilePreviewSpan.innerText = 'ดูใบส่งมอบงาน';
+        } else {
+            mobilePreviewSpan.innerText = 'ดูใบเสนอราคา';
+        }
     }
 
     setValEl('inp-doc-copy-mode', currentData.docCopyMode);
@@ -695,9 +772,13 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
     const badgeStyle = (currentData.docCopyMode === 'both') ? '' : 'display:none;';
     
     const isInvoice = currentData.docType === 'invoice';
-    const docTitleHtml = isInvoice 
-        ? `ใบส่งมอบงานและใบเรียกเก็บเงิน<br><span style="font-size: 10px; font-weight: 600; color: var(--text-muted); display: block; margin-top: 2px;">Work Completion & Invoice</span>`
-        : `ใบเสนอราคา`;
+    const isReceipt = currentData.docType === 'receipt';
+    let docTitleHtml = `ใบเสนอราคา`;
+    if (isReceipt) {
+        docTitleHtml = `ใบเสร็จรับเงิน<br><span style="font-size: 10px; font-weight: 600; color: var(--text-muted); display: block; margin-top: 2px;">Receipt</span>`;
+    } else if (isInvoice) {
+        docTitleHtml = `ใบส่งมอบงานและใบเรียกเก็บเงิน<br><span style="font-size: 10px; font-weight: 600; color: var(--text-muted); display: block; margin-top: 2px;">Work Completion & Invoice</span>`;
+    }
     
     // Build table rows
     let rowsHtml = '';
@@ -748,7 +829,7 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
                     <span class="doc-page-num">หน้า ${pageNum}/${totalPages}</span>
                 </div>
                 <span class="doc-title-badge">${typeLabel}</span>
-                <h2 class="doc-title" style="${isInvoice ? 'font-size: 17px; line-height: 1.2; margin-top: 8px;' : ''}">${docTitleHtml}</h2>
+                <h2 class="doc-title" style="${(isInvoice || isReceipt) ? 'font-size: 17px; line-height: 1.2; margin-top: 8px;' : ''}">${docTitleHtml}</h2>
             </div>
         </div>
     `;
@@ -818,20 +899,16 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
                                 </div>
                             </div>
                         </div>
-                        <div class="footer-extra-info" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 7.5px; line-height: 1.25;">
+                        <div class="footer-extra-info" style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 7.5px; line-height: 1.25;">
                             <div class="payment-terms-box" style="border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 6px; background: #fafafa;">
                                 <div style="font-weight: 700; color: var(--text-main); margin-bottom: 1px;">เงื่อนไขการชำระเงิน</div>
-                                <div class="prev-payment-terms" contenteditable="true" style="height: 5em; overflow: hidden; white-space: pre-line; color: var(--text-muted);"></div>
-                            </div>
-                            <div class="warranty-box" style="border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 6px; background: #fafafa;">
-                                <div style="font-weight: 700; color: var(--text-main); margin-bottom: 1px;">การรับประกันงาน</div>
-                                <div class="prev-warranty" contenteditable="true" style="height: 2.5em; overflow: hidden; white-space: pre-line; color: var(--text-muted);"></div>
+                                <div class="prev-payment-terms" contenteditable="true" style="min-height: 5em; height: auto; white-space: pre-line; color: var(--text-muted);"></div>
                             </div>
                         </div>
                     </div>
                     <div class="summary-right">
                         <table class="calc-table">
-                            <tr><td>${isInvoice ? 'มูลค่าตามใบแจ้งหนี้:' : 'มูลค่าตามใบเสนอราคา:'}</td><td class="prev-subtotal"></td></tr>
+                            <tr><td>${isReceipt ? 'มูลค่าตามใบเสร็จรับเงิน:' : (isInvoice ? 'มูลค่าตามใบแจ้งหนี้:' : 'มูลค่าตามใบเสนอราคา:')}</td><td class="prev-subtotal"></td></tr>
                             <tr class="prev-vat-row"><td>ภาษีมูลค่าเพิ่ม (VAT 7%):</td><td class="prev-vat"></td></tr>
                             <tr class="total-row"><td>จำนวนเงินทั้งสิ้น:</td><td class="prev-grand-total"></td></tr>
                             <tr class="prev-wht-row" style="display:none;"><td class="prev-wht-label"></td><td class="prev-wht-amount"></td></tr>
@@ -841,7 +918,7 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
                 </div>
                 <div class="doc-remark" style="margin-top: 4px;">
                     <div class="title"><i class="fas fa-sticky-note"></i> หมายเหตุ :</div>
-                    <div class="prev-remark" contenteditable="true" style="height: 2.6em; overflow: hidden; line-height: 1.3; white-space: pre-line;"></div>
+                    <div class="prev-remark" contenteditable="true" style="min-height: 2.6em; height: auto; line-height: 1.3; white-space: pre-line;"></div>
                 </div>
                 <div class="signatures-grid">
                     <div class="sig-box">
@@ -857,7 +934,7 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
                         <div class="sig-date prev-sig-approver-date" contenteditable="true"></div>
                     </div>
                     <div class="sig-box">
-                        <div class="sig-title">${isInvoice ? 'ผู้รับมอบงาน / ผู้ตรวจรับ' : 'ผู้รับเอกสาร (ลูกค้า)'}</div>
+                        <div class="sig-title">${isReceipt ? 'ผู้จ่ายเงิน (ลูกค้า)' : (isInvoice ? 'ผู้รับมอบงาน / ผู้ตรวจรับ' : 'ผู้รับเอกสาร (ลูกค้า)')}</div>
                         <div style="position: relative;">
                             <div class="sig-area" style="height: 35px; border-bottom: 1.5px dashed var(--border-color); margin-bottom: 4px;"></div>
                             <div class="sig-stamp-placeholder" style="position: absolute; top: -5px; right: 0; width: 45px; height: 45px; border: 1.5px dotted #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #ccc; pointer-events: none; transform: rotate(15deg);">ตราประทับ</div>
@@ -900,6 +977,7 @@ function generatePageHtml(type, pageNum, totalPages, items, isLastPage) {
 }
 
 function updateItemField(index, field, value) {
+    formIsDirty = true;
     if (field === 'qty' || field === 'price') {
         const val = parseFloat(value.replace(/,/g, ''));
         currentData.items[index][field] = isNaN(val) ? 0 : val;
@@ -926,6 +1004,7 @@ function updateItemField(index, field, value) {
 function addItem() {
     const nextSeq = currentData.items.length + 1;
     currentData.items.push({ seq: String(nextSeq), desc: '', qty: 1, unit: 'งาน', price: 0, isHeader: false });
+    formIsDirty = true;
     renderItems();
 }
 
@@ -935,6 +1014,7 @@ function deleteItem(index) {
         return;
     }
     currentData.items.splice(index, 1);
+    formIsDirty = true;
     renderItems();
 }
 
